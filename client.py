@@ -1,4 +1,3 @@
-'''client'''
 import socket
 import cPickle as pickle
 from common.message import message
@@ -8,17 +7,20 @@ HOST = 'localhost'
 PORT = 8888
 
 class Client(object):
+    """Chat client"""
     def __init__(self, username, conn):
         self.username = username
         self.conn = conn
 
     def send_username_to_server(self):
+        """Send the username of the client to the server."""
         u_message = message.UsernameMessage(self.username)
         b = pickle.dumps(u_message)
         self.conn.sendall(b)
         print 'sent the username to the server'
         
     def send_sample_chat_to_server(self):
+        """Send a sample chat message to the server."""
         text = "this is just some sample text..."
         sender = self.username
         receiver = self.username
@@ -27,6 +29,7 @@ class Client(object):
         self.conn.sendall(b)
 
 def get_username_from_client():
+    """Get the username from the client."""
     name = raw_input("Enter a username: ")
     while(True):
         if name.strip() is "":
@@ -42,6 +45,6 @@ def main():
     
     ''' create the Client object '''
     client = Client(username, conn)
-    client.send_sample_chat_to_server()
+    client.send_username_to_server()
 
 if __name__ == '__main__': main()

@@ -1,9 +1,4 @@
-''' this defines the Basic class '''
-
-''' this in an abstract class extended by all the communication classes (eg. Message) '''
-
-''' the flag member is used to differentiate between the various types of communication that 
-    can be possible between the client and the server '''
+"""Contains the Basic, UsernameMessage and the ChatMessage classes used for communication between client and server."""
 
 class Basic(object):
     def __init__(self):
