@@ -21,7 +21,7 @@ class Server():
         """Set up the server."""
         self.s_socket.bind((HOST, PORT))
         self.s_socket.listen(10)
-        print 'Server set up, listening for incoming connections'
+        print 'Server set up, listening for incoming connections...\n'
         
     def tear_down(self):
         """Abort the server."""
@@ -53,12 +53,12 @@ class ServiceThread(Thread):
             def parse_response_for_username(username_message):
                 """Parse response from the client for the username."""
                 self.client_username = username_message.get_username()
-                print 'client username: ' + self.client_username
+                print 'username: ' + self.client_username
+                print '-------------------------------------'
 
             def parse_response_for_chat(chat_message):
                 """Parse response from the client for the chat message."""
                 text_from_client = chat_message.get_text()
-                print type(text_from_client)
                 ''' send reply to client by creating a ChatMessage object '''
                 chat_reply_text = 'received...' + text_from_client
                 chat_reply = message.ChatMessage(self.client_username, chat_reply_text, self.client_username)

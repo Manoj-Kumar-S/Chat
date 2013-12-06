@@ -19,7 +19,6 @@ class Client(object):
         u_message = message.UsernameMessage(self.username)
         b = pickle.dumps(u_message)
         self.conn.sendall(b)
-        print 'sent the username to the server'
 
 class AsReceiver(Thread):
     """This class handles all the incoming chats for the client."""
@@ -45,7 +44,7 @@ class AsSender(Thread):
         self.conn= client.conn
     def run(self):
         try:
-            text = raw_input("Enter message and type Enter to send it to the server\n")
+            text = raw_input("Enter message and press <return> to send it to the server\n")
             while True:
                 chat_message = message.ChatMessage(self.username, text, self.username)
                 b = pickle.dumps(chat_message)
