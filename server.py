@@ -1,6 +1,7 @@
 import socket
 import cPickle as pickle
 from threading import Thread
+from common.message import message
 
 HOST = ''
 PORT = 8888
@@ -42,39 +43,46 @@ class ServiceThread(Thread):
     def __init__(self, (client)):
         Thread.__init__(self)
         self.conn = client[0]
-        self.addr = client[1]
         ''' self.addr is the tuple of IP and port of the client '''
+        self.addr = client[1]
         
-        ''' the username of the client handled by this thread '''
-        self.client_username = "anon"
-
+        self.client_username = 'anon'
     def run(self):
-
         def parse_user_response(data):
             """Parse reply from the client."""
-
             def parse_response_for_username(username_message):
                 """Parse response from the client for the username."""
                 self.client_username = username_message.get_username()
                 print 'client username: ' + self.client_username
-                list_of_users.append(self.client_username)
 
             def parse_response_for_chat(chat_message):
                 """Parse response from the client for the chat message."""
-                print 'chat message: ' + chat_message.get_text()
-                print 'chat sender: ' + chat_message.get_sender()
-                print 'chat_receiver: ' + chat_message.get_receiver()
+                text_from_client = chat_message.get_text()
+                print type(text_from_client)
+                ''' send reply to client by creating a ChatMessage object '''
+                chat_reply_text = 'received...' + text_from_client
+                chat_reply = message.ChatMessage(self.client_username, chat_reply_text, self.client_username)
+                b = pickle.dumps(chat_reply)
+                self.conn.sendall(b)
 
             basic_object = pickle.loads(data)
             ''' get the flag from the unpickled object and handle it appropriately '''
-            flag = basic_object.get_flag()
+            try:
+                flag = basic_object.get_flag()
+            except AttributeError:
+                raise
             if flag == 1:
                 parse_response_for_username(basic_object)
             elif flag == 2:
                 parse_response_for_chat(basic_object)
-
-        data = self.conn.recv(1024)
-        parse_user_response(data)
+        try:
+            while True:
+                data = self.conn.recv(1024)
+                parse_user_response(data)
+        except (EOFError, socket.error):
+            print "The client has logged out or the connection has been disconnected."
+        except AttributeError:
+            print "The unpickled object does not allow the requested operation."
 
 def main():
     server = Server()

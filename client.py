@@ -1,5 +1,7 @@
 import socket
+import sys
 import cPickle as pickle
+from threading import Thread
 from common.message import message
 
 ''' host address and port of the server on which to connect '''
@@ -18,24 +20,48 @@ class Client(object):
         b = pickle.dumps(u_message)
         self.conn.sendall(b)
         print 'sent the username to the server'
-        
-    def send_sample_chat_to_server(self):
-        """Send a sample chat message to the server."""
-        text = "this is just some sample text..."
-        sender = self.username
-        receiver = self.username
-        chat_message = message.ChatMessage(sender, text, receiver)
-        b = pickle.dumps(chat_message)
-        self.conn.sendall(b)
+
+class AsReceiver(Thread):
+    """This class handles all the incoming chats for the client."""
+    def __init__(self, client):
+        Thread.__init__(self)
+        self.username = client.username
+        self.conn = client.conn
+    def run(self):
+        try:
+            while True:
+                data = self.conn.recv(1024)
+                chat_message = pickle.loads(data)
+                reply_from_server = chat_message.get_text()
+                print reply_from_server
+        except AttributeError:
+            print "Error: The unpickled object does not allow the requested operation"    
+            
+class AsSender(Thread):
+    """This class handles all the outgoing chats for the client."""
+    def __init__(self, client):
+        Thread.__init__(self)
+        self.username = client.username
+        self.conn= client.conn
+    def run(self):
+        try:
+            text = raw_input("Enter message and type Enter to send it to the server\n")
+            while True:
+                chat_message = message.ChatMessage(self.username, text, self.username)
+                b = pickle.dumps(chat_message)
+                self.conn.sendall(b)
+                text = raw_input().strip()
+        except AttributeError:
+            print "Error: The unpickled object does not allow the requested operation"
 
 def get_username_from_client():
     """Get the username from the client."""
-    name = raw_input("Enter a username: ")
+    name = raw_input("Enter a username: ").strip()
     while(True):
-        if name.strip() is "":
-            name = raw_input("Invalid username, please try again: ")
+        if name is "":
+            name = raw_input("Invalid username, please try again: ").strip()
         else:
-            return name.strip()
+            return name
 
 def main():
     conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -45,6 +71,16 @@ def main():
     
     ''' create the Client object '''
     client = Client(username, conn)
+    
+    ''' this is a necessary step '''
     client.send_username_to_server()
+    
+    ''' start the outgoing chat thread for the client. '''
+    client_as_sender = AsSender(client)
+    client_as_sender.start()
+    
+    ''' start the incoming chat thread for the client. '''
+    client_as_receiver = AsReceiver(client)
+    client_as_receiver.start()
 
 if __name__ == '__main__': main()
