@@ -2,6 +2,7 @@ import socket
 import cPickle as pickle
 from threading import Thread
 from common.message import message
+from common.exception.exception import *
 
 HOST = ''
 PORT = 8888
@@ -53,15 +54,17 @@ class ServiceThread(Thread):
             def parse_response_for_username(username_message):
                 """Parse response from the client for the username."""
                 self.client_username = username_message.get_username()
+                list_of_users.append(self.client_username)
                 print 'username: ' + self.client_username
                 print '-------------------------------------'
 
             def parse_response_for_chat(chat_message):
                 """Parse response from the client for the chat message."""
                 text_from_client = chat_message.get_text()
-                ''' send reply to client by creating a ChatMessage object '''
-                chat_reply_text = 'received...' + text_from_client
-                chat_reply = message.ChatMessage(self.client_username, chat_reply_text, self.client_username)
+                receiver_of_text = chat_message.get_receiver()
+                ''' before this check if the receiver is online or not. if not, respond to the client '''
+                ''' send the chat message to the receiver '''
+                chat_reply = message.ChatMessage(self.client_username, text_from_client, receiver_of_text)
                 b = pickle.dumps(chat_reply)
                 self.conn.sendall(b)
 
@@ -83,6 +86,10 @@ class ServiceThread(Thread):
             print "The client has logged out or the connection has been disconnected."
         except AttributeError:
             print "The unpickled object does not allow the requested operation."
+            
+def check_user_online(username):
+    """Checks if the user with username = username is online right now"""
+    return username in list_of_users
 
 def main():
     server = Server()

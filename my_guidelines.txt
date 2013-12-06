@@ -1,0 +1,3 @@
+- the AsSender thread in client.py should spawn another thread to service another client
+- when the user is not online, should the server send the exception itself to the client?
+- while the client is sending something through the socket, should the thread obtain a lock to it?

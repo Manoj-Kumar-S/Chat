@@ -19,6 +19,9 @@ class Client(object):
         u_message = message.UsernameMessage(self.username)
         b = pickle.dumps(u_message)
         self.conn.sendall(b)
+    
+    def logout(self):
+        self.conn.close()
 
 class AsReceiver(Thread):
     """This class handles all the incoming chats for the client."""
@@ -42,13 +45,18 @@ class AsSender(Thread):
         Thread.__init__(self)
         self.username = client.username
         self.conn= client.conn
+
     def run(self):
         try:
-            text = raw_input("Enter message and press <return> to send it to the server\n")
+            receiver_username = raw_input("Enter the name of the receiver: ")
+            text = raw_input("Enter message and press <return>\n")
             while True:
-                chat_message = message.ChatMessage(self.username, text, self.username)
+                chat_message = message.ChatMessage(self.username, text, receiver_username)
                 b = pickle.dumps(chat_message)
                 self.conn.sendall(b)
+                
+                '''trial'''
+                
                 text = raw_input().strip()
         except AttributeError:
             print "Error: The unpickled object does not allow the requested operation"
