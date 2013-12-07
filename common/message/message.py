@@ -43,13 +43,3 @@ class ChatMessage(Basic):
     
     def get_flag(self):
         return self._flag
-
-class ReceiverUsernameMessage(Basic):
-    def __init__(self, receiver_username):
-        self.__receiver_username = receiver_username
-        self._flag = 3
-    def get_receiver_username(self):
-        return self.__receiver_username
-    
-    def get_flag(self):
-        return self._flag
