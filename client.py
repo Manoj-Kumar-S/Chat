@@ -1,5 +1,6 @@
 import socket
 import sys
+import time
 import cPickle as pickle
 from threading import Thread
 from common.message import message
@@ -20,8 +21,14 @@ class Client(object):
         b = pickle.dumps(u_message)
         self.conn.sendall(b)
     
+    def send_sample_message(self):
+        self.conn.sendall(pickle.dumps(message.ChatMessage(self.username, "sample text...", self.username)))
+        print 'sent sample text to server'
+
     def logout(self):
-        self.conn.close()
+        logout_message = message.LogoutMessage()
+        b = pickle.dumps(logout_message)
+        self.conn.send(b)
 
 class AsReceiver(Thread):
     """This class handles all the incoming chats for the client."""
@@ -34,10 +41,16 @@ class AsReceiver(Thread):
             while True:
                 data = self.conn.recv(1024)
                 chat_message = pickle.loads(data)
-                reply_from_server = chat_message.get_text()
-                print reply_from_server
+                flag = chat_message.get_flag()
+                '''first check the flags'''
+                if flag == 2:
+                    reply_from_server = chat_message.get_text()
+                    print reply_from_server
+                elif flag == -2:
+                    print chat_message.get_error_msg()
         except AttributeError:
-            print "Error: The unpickled object does not allow the requested operation"    
+            print "Error: The unpickled object does not allow the requested operation"
+                
 class AsSender(Thread):
     """This class handles all the outgoing chats for the client."""
     def __init__(self, client):
@@ -63,7 +76,6 @@ def get_username_from_client():
             name = raw_input("Invalid username, please try again: ").strip()
         else:
             return name
-
 def main():
     conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     remote_ip = socket.gethostbyname(HOST)
@@ -75,13 +87,11 @@ def main():
     
     ''' this is a necessary step '''
     client.send_username_to_server()
-    
-    ''' start the outgoing chat thread for the client. '''
+
     client_as_sender = AsSender(client)
     client_as_sender.start()
     
-    ''' start the incoming chat thread for the client. '''
     client_as_receiver = AsReceiver(client)
     client_as_receiver.start()
-
+    
 if __name__ == '__main__': main()

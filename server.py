@@ -28,7 +28,9 @@ class Server():
         
     def tear_down(self):
         """Abort the server."""
-        ''' also abort all the client connections '''
+        
+        '''close all existing connections'''
+        for conn in list_of_users.itervalues(): conn.close()
         del list_of_users
         self.s_socket.close()
 
@@ -48,8 +50,6 @@ class ServiceThread(Thread):
         self.conn = client[0]
         ''' self.addr is the tuple of IP and port of the client '''
         self.addr = client[1]
-        
-        self.client_username = 'anon'
     def run(self):
         def parse_user_response(data):
             """Parse reply from the client."""
@@ -64,6 +64,9 @@ class ServiceThread(Thread):
                 """Parse response from the client for the chat message."""
                 text_from_client = chat_message.get_text()
                 receiver_of_text = chat_message.get_receiver()
+                
+                if not list_of_users.has_key(receiver_of_text):
+                    raise UserNotOnlineException
                 ''' before this check if the receiver is online or not. if not, respond to the client '''
                 chat_reply = message.ChatMessage(self.client_username, text_from_client, receiver_of_text)
                 b = pickle.dumps(chat_reply)
@@ -75,10 +78,13 @@ class ServiceThread(Thread):
                 flag = basic_object.get_flag()
             except AttributeError:
                 raise
-            if flag == 1:
-                parse_response_for_username(basic_object)
-            elif flag == 2:
-                parse_response_for_chat(basic_object)
+            try:
+                if flag == 1:
+                    parse_response_for_username(basic_object)
+                elif flag == 2:
+                    parse_response_for_chat(basic_object)
+            except UserNotOnlineException:
+                raise
         try:
             while True:
                 data = self.conn.recv(1024)
@@ -87,10 +93,10 @@ class ServiceThread(Thread):
             print "The client has logged out or the connection has been disconnected."
         except AttributeError:
             print "The unpickled object does not allow the requested operation."
-            
-def check_user_online(username):
-    """Checks if the user with username = username is online right now"""
-    return username in list_of_users
+        except UserNotOnlineException as e:
+            '''send the exception message to the client'''
+            b = pickle.dumps(e)
+            self.conn.sendall(b)
 
 def main():
     server = Server()

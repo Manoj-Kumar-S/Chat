@@ -18,6 +18,13 @@ class UsernameMessage(Basic):
     def get_flag(self):
         return self._flag
     
+class LogoutMessage(Basic):
+    def __init__(self):
+        self._flag = -1
+    
+    def get_flag(self):
+        return self._flag
+    
 class ChatMessage(Basic):
     def __init__(self, sender, text, receiver):
         self._sender = sender
