@@ -6,7 +6,9 @@ from common.exception.exception import *
 
 HOST = ''
 PORT = 8888
-list_of_users = []
+
+'''dictionary to map a username to its connection to the server'''
+list_of_users = {}
 
 def print_all_users():
     """Print the current list of users."""
@@ -54,19 +56,18 @@ class ServiceThread(Thread):
             def parse_response_for_username(username_message):
                 """Parse response from the client for the username."""
                 self.client_username = username_message.get_username()
-                list_of_users.append(self.client_username)
                 print 'username: ' + self.client_username
                 print '-------------------------------------'
+                list_of_users[self.client_username] = self.conn
 
             def parse_response_for_chat(chat_message):
                 """Parse response from the client for the chat message."""
                 text_from_client = chat_message.get_text()
                 receiver_of_text = chat_message.get_receiver()
                 ''' before this check if the receiver is online or not. if not, respond to the client '''
-                ''' send the chat message to the receiver '''
                 chat_reply = message.ChatMessage(self.client_username, text_from_client, receiver_of_text)
                 b = pickle.dumps(chat_reply)
-                self.conn.sendall(b)
+                list_of_users.get(receiver_of_text).sendall(b)
 
             basic_object = pickle.loads(data)
             ''' get the flag from the unpickled object and handle it appropriately '''
