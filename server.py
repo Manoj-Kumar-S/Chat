@@ -50,45 +50,39 @@ class ServiceThread(Thread):
         self.conn = client[0]
         ''' self.addr is the tuple of IP and port of the client '''
         self.addr = client[1]
+        
+    def parse_response_for_username(self, username_message):
+        """Parse response from the client for username."""
+        self.client_username = username_message.get_username()
+        print 'username: ' + self.client_username
+        print '-------------------------------------'
+        list_of_users[self.client_username] = self.conn
+    
+    def parse_response_for_chat(self, chat_message):
+        """Parse response from the client for the chat message."""
+        text_from_client = chat_message.get_text()
+        receiver_of_text = chat_message.get_receiver()
+        if not list_of_users.has_key(receiver_of_text):
+            raise UserNotOnlineException
+        chat_reply = message.ChatMessage(self.client_username, text_from_client, receiver_of_text)
+        b = pickle.dumps(chat_reply)
+        list_of_users.get(receiver_of_text).sendall(b)
+    
+    def parse_user_response(self, data):
+        basic_object = pickle.loads(data)
+        try:
+            flag = basic_object.get_flag()
+            if flag == 1: self.parse_response_for_username(basic_object)
+            elif flag == 2: self.parse_response_for_chat(basic_object)
+        except AttributeError:
+            raise
+        except UserNotOnlineException:
+            raise
     def run(self):
-        def parse_user_response(data):
-            """Parse reply from the client."""
-            def parse_response_for_username(username_message):
-                """Parse response from the client for the username."""
-                self.client_username = username_message.get_username()
-                print 'username: ' + self.client_username
-                print '-------------------------------------'
-                list_of_users[self.client_username] = self.conn
-
-            def parse_response_for_chat(chat_message):
-                """Parse response from the client for the chat message."""
-                text_from_client = chat_message.get_text()
-                receiver_of_text = chat_message.get_receiver()
-                
-                if not list_of_users.has_key(receiver_of_text):
-                    raise UserNotOnlineException
-                ''' before this check if the receiver is online or not. if not, respond to the client '''
-                chat_reply = message.ChatMessage(self.client_username, text_from_client, receiver_of_text)
-                b = pickle.dumps(chat_reply)
-                list_of_users.get(receiver_of_text).sendall(b)
-
-            basic_object = pickle.loads(data)
-            ''' get the flag from the unpickled object and handle it appropriately '''
-            try:
-                flag = basic_object.get_flag()
-            except AttributeError:
-                raise
-            try:
-                if flag == 1:
-                    parse_response_for_username(basic_object)
-                elif flag == 2:
-                    parse_response_for_chat(basic_object)
-            except UserNotOnlineException:
-                raise
         try:
             while True:
                 data = self.conn.recv(1024)
-                parse_user_response(data)
+                self.parse_user_response(data)
         except (EOFError, socket.error):
             print "The client has logged out or the connection has been disconnected."
         except AttributeError:
