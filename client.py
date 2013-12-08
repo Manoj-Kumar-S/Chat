@@ -4,7 +4,9 @@ import time
 import cPickle as pickle
 from threading import Thread
 from common.message import message
+from common.exception import *
 
+MAX_ATTEMPTS = 3
 ''' host address and port of the server on which to connect '''
 HOST = 'localhost'
 PORT = 8888
@@ -76,10 +78,27 @@ def get_username_from_client():
             name = raw_input("Invalid username, please try again: ").strip()
         else:
             return name
+        
+def connect_to_remote_server(conn):
+    remote_ip = socket.gethostbyname(HOST)
+    for attempt in range(MAX_ATTEMPTS):
+        try:
+            conn.connect((remote_ip, PORT))
+            return True
+        except socket.error:
+            print 'Could not connect to server. Attempting to reconnect...'
+            time.sleep(5)
+    raise exception.CouldNotConnectToServerException
+
 def main():
     conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    remote_ip = socket.gethostbyname(HOST)
-    conn.connect((remote_ip, PORT))
+
+    try:
+        connect_to_remote_server(conn)
+    except exception.CouldNotConnectToServerException as e:
+        print e
+        sys.exit(1)
+
     username = get_username_from_client()
     
     ''' create the Client object '''
