@@ -29,6 +29,7 @@ class ChatProtocol(LineReceiver):
             self.name = name
             self.factory.users[self.name] = self
             self.sendLine('* Welcome %s! *' % (self.name))
+            self.sendLine('* Use ~users to see the list of users currently online *')
             self.broadcastMessage('* %s has joined the chat *' % (self.name,))
             self.state = 'CHAT'
             

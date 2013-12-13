@@ -1,10 +1,7 @@
-import sys
-import time
 from twisted.internet.protocol import ClientFactory, Factory
 from twisted.protocols.basic import LineReceiver
 from twisted.internet import reactor
 from threading import Thread
-from PyQt4 import QtGui, QtCore
 
 class ChatThread(Thread):
     def __init__(self, name, protocol):
