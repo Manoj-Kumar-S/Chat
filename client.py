@@ -1,43 +1,43 @@
-from twisted.internet.protocol import ClientFactory, Factory
-from twisted.protocols.basic import LineReceiver
-from twisted.internet import reactor
+from twisted.internet import protocol, reactor
 from threading import Thread
 
 class ChatThread(Thread):
-    def __init__(self, name, protocol):
-        Thread.__init__(self)
-        self.name = name
-        self.protocol = protocol
-        
+    def __init__(self, nick, transport):
+        Thread.__init__(self, name='chat thread')
+        self.nick = nick
+        self.transport = transport
+
     def run(self):
         while True:
             text = raw_input()
-            self.protocol.sendLine(text)
+            self.transport.write(text)
 
-class ClientProtocol(LineReceiver):
-    def __init__(self, factory):
-        self.factory = factory
-        self.name = None
-
+class ClientProtocol(protocol.Protocol):
     def connectionMade(self):
         '''create nick and send it to the server'''
-        self.name = raw_input('Enter nick: ').strip().lower()
-        self.sendLine(self.name)
-        ChatThread(self.name, self).start()
+        self.nick = raw_input('Enter a nick: ').strip().lower()
+        self.transport.write(self.nick)
+        self.chat_thread = ChatThread(self.nick, self.transport)
+        self.chat_thread.setDaemon(True)
+        self.chat_thread.start()
 
-    def lineReceived(self, line):
-        print line
+    def dataReceived(self, message):
+        print message
 
-class ClientFactory(ClientFactory):
-    def buildProtocol(self, addr):
-        return ClientProtocol(self)
+class ClientFactory(protocol.ClientFactory):
+    def __init__(self):
+        self.chat_thread = None
     
-    def clientConnectionFailed(self, connector, reason):
-        print 'Could not connect to server. Please try again later.'
-        reactor.stop()
+    def buildProtocol(self, addr):
+        return ClientProtocol()
 
     def clientConnectionLost(self, connector, reason):
-        print 'connection lost: ' + str(reason.getErrorMessage())
-    
+        print 'You have been logged out.'
+        reactor.stop()
+
+    def clientConnectionFailed(self, connector, reason):
+        print 'Failed to connect to server. Please try again later.'
+        reactor.stop()
+
 reactor.connectTCP('localhost', 8000, ClientFactory())
 reactor.run()
