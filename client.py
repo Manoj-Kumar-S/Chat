@@ -24,13 +24,13 @@ class ClientProtocol(LineReceiver):
 
     def connectionMade(self):
         print 'Connection to server successful'
+        '''create and send the nick to the server'''
+        self.name = raw_input('Enter nick: ').strip().lower()
+        self.sendLine(self.name)
+        ChatThread(self.name, self).start()
+        print 'Thread started'
 
     def lineReceived(self, line):
-        if line == 'What is your name?':
-            self.name = raw_input('Enter nick to start chatting: ').strip()
-            self.sendLine(self.name)
-            ChatThread(self.name, self).start()
-        else:
             print line
 
 class ClientFactory(ClientFactory):

@@ -9,7 +9,7 @@ class ChatProtocol(LineReceiver):
         self.state = 'REGISTER'
     
     def connectionMade(self):
-        self.sendLine('What is your name?')
+        print 'Client connected'
         
     def connectionLost(self, reason):
         self.broadcastMessage('%s has left the chatroom!' % (self.name))
@@ -19,11 +19,10 @@ class ChatProtocol(LineReceiver):
             self.handle_register(line)
         else:
             self.handle_chat(line)
-        
+
     def handle_register(self, name):
-        name = name.lower()
         if name in self.factory.users:
-            self.sendLine('* Nick already in use. Try another nick *')
+            self.sendLine('* Nick already in use. Try another nick. *')
             return
         else:
             self.name = name
