@@ -21,14 +21,15 @@ class ChatProtocol(LineReceiver):
             self.handle_chat(line)
         
     def handle_register(self, name):
+        name = name.lower()
         if name in self.factory.users:
-            self.sendLine('Username already in use. Try another username.')
+            self.sendLine('* Nick already in use. Try another nick *')
             return
         else:
             self.name = name
             self.factory.users[self.name] = self
-            self.sendLine('Welcome %s!' % (self.name))
-            self.broadcastMessage('%s has joined the chat!' % (self.name,))
+            self.sendLine('* Welcome %s! *' % (self.name))
+            self.broadcastMessage('* %s has joined the chat *' % (self.name,))
             self.state = 'CHAT'
             
     def handle_chat(self, chat):
@@ -47,4 +48,5 @@ class ChatFactory(Factory):
         return ChatProtocol(self)
 
 reactor.listenTCP(8000, ChatFactory())
+print 'Server is running and listening for incoming connections...'
 reactor.run()
