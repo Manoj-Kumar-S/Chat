@@ -13,7 +13,7 @@ class ChatProtocol(LineReceiver):
         print 'Client connected'
         
     def connectionLost(self, reason):
-        self.broadcastMessage('%s has left the chatroom!' % (self.name))
+        self.broadcastMessage('* %s has left the chatroom! *' % (self.name))
     
     def lineReceived(self, line):
         if self.state == 'REGISTER':
