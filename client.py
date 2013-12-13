@@ -24,7 +24,7 @@ class ClientProtocol(LineReceiver):
 
     def connectionMade(self):
         print 'Connection to server successful'
-        '''create and send the nick to the server'''
+        '''create nick and send it to the server'''
         self.name = raw_input('Enter nick: ').strip().lower()
         self.sendLine(self.name)
         ChatThread(self.name, self).start()

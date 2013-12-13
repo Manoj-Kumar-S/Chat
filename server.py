@@ -2,6 +2,7 @@ from twisted.internet.protocol import Factory
 from twisted.protocols.basic import LineReceiver
 from twisted.internet import reactor
 
+commands = ['users', 'exit']
 class ChatProtocol(LineReceiver):
     def __init__(self, factory):
         self.factory = factory
@@ -32,8 +33,19 @@ class ChatProtocol(LineReceiver):
             self.state = 'CHAT'
             
     def handle_chat(self, chat):
-        self.broadcastMessage('<%s>: %s' % (self.name, chat))
+        '''check if what the client sent is a command'''
+        if chat.startswith('~'):
+            command = chat[1:].strip()
+            if command == 'users':
+                self.send_users_list()
+        else: self.broadcastMessage('<%s>: %s' % (self.name, chat))
         
+    def send_users_list(self):
+        delimited_users_list = ''
+        for user in self.factory.users.keys():
+            delimited_users_list += user + ', '
+        self.sendLine('* %s *' % (delimited_users_list[0 : len(delimited_users_list)-2]))
+
     def broadcastMessage(self, chat):
         for name, protocol in self.factory.users.iteritems():
             if protocol != self:
