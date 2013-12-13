@@ -34,7 +34,7 @@ class ClientFactory(ClientFactory):
     def buildProtocol(self, addr):
         return ClientProtocol(self)
     
-    def clientConnectionFalied(self, connector, reason):
+    def clientConnectionFailed(self, connector, reason):
         print 'connection failed: ' + str(reason.getErrorMessage())
     
     def clientConnectionLost(self, connector, reason):
