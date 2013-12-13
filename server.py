@@ -29,14 +29,17 @@ class ChatProtocol(protocol.Protocol):
             self.name = name
             self.factory.users[self.name] = self.transport
             self.transport.write('* Welcome %s! *\n' % (self.name))
-            self.transport.write('* Use ~users to see the list of users currently online *\n')
+            self.transport.write('* Type ~users to see the list of users currently online *\n')
+            self.transport.write('* Type ~exit to exit *\n')
             self.broadcastMessage('* %s has joined the chat *' % (self.name, ))
             self.state = 'CHAT'
             
     def handle_chat(self, chat):
         if chat.startswith('~'):
             command = chat[1:]
-            if command == 'users':
+            if command not in commands:
+                self.transport.write('* Invalid command *')
+            elif command == 'users':
                 self.send_users_list()
             elif command == 'exit':
                 self.exit_user()
