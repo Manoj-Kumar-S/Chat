@@ -53,7 +53,7 @@ class ChatProtocol(protocol.Protocol):
         status = text_message.get_status()
         if status == 'COMMAND':
             self.handle_command(text_message)
-        elif status == 'CHAT':
+        elif status == 'CHAT_MESSAGE':
             if self.current_receiver == None:
                 self.send_server_message('You need to ping a user before chatting')
                 return
