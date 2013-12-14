@@ -3,7 +3,14 @@ from threading import Thread
 import cPickle as pickle
 from common.message import message
 
-commands = ['exit', 'ping', 'users', 'whoami', 'other']
+commands = { 'commands': 'list of available commands. ~commands',
+             'help': 'help on how to use a command. ~help <command name>',
+             'man': 'same as help. ~man <command name>',
+             'exit': 'exit from chatroom. ~exit',
+             'ping': 'ping a user. ~ping <user nick>' ,
+             'users': 'list of users currently online. ~users',
+             'whoami': 'who are you? ~whoami',
+             'other': 'who is the user you are chatting with right now. ~other' }
 
 class ChatProtocol(protocol.Protocol):
     def __init__(self, factory):
@@ -35,6 +42,9 @@ class ChatProtocol(protocol.Protocol):
         else:
             self.nick = nick
             self.factory.users[self.nick] = self.transport
+            welcome_message = 'Welcome %s! Type ~commands to get the list of available commands.' % (self.nick)
+            server_message = message.ServerMessage(welcome_message)
+            self.transport.write(pickle.dumps(server_message))
             self.state = 'CHAT'
         
     def handle_data(self, chat):
@@ -58,10 +68,15 @@ class ChatProtocol(protocol.Protocol):
             '''create a ServerMessage object here'''
             server_message = message.ServerMessage('Invalid command')
             self.transport.write(pickle.dumps(server_message))
+        elif command == 'commands':
+            self.send_commands_list()
+        elif command == 'help' or command == 'man':
+            for_command = command_message.get_tag()
+            self.send_help_for_command(for_command)
         elif command == 'users':
             self.send_users_list()
         elif command == 'ping':
-            user = command_message.get_user()
+            user = command_message.get_tag()
             self.ping_user(user)
         elif command == 'exit':
             self.exit_user()
@@ -70,6 +85,21 @@ class ChatProtocol(protocol.Protocol):
         elif command == 'other':
             self.other_user()
             
+    def send_commands_list(self):
+        result = ''
+        for key, value in commands.iteritems():
+            result += '%s: %s\n' % (key, value)
+        server_message = message.ServerMessage(result[:len(result)-1])
+        self.transport.write(pickle.dumps(server_message))
+
+    def send_help_for_command(self, command):
+        command_info = commands.get(command)
+        if command_info is None:
+            server_message = message.ServerMessage('Invalid command name')
+        else:
+            server_message = message.ServerMessage(command_info)
+        self.transport.write(pickle.dumps(server_message))
+
     def handle_chat(self, text_message):
         transport = self.factory.users.get(self.current_receiver)
         transport.write(pickle.dumps(text_message))
@@ -103,11 +133,14 @@ class ChatProtocol(protocol.Protocol):
         self.transport.write(pickle.dumps(server_message))
 
     def exit_user(self):
-        '''Send a message to the current receiver that the user is logging out'''
-        if self.current_receiver is not None:
-            transport = self.factory.users.get(self.current_receiver)
-            server_message = message.ServerMessage('<%s> has logged out.' % (self.nick))
-            transport.write(pickle.dumps(server_message))
+        '''Send a message to the current receiver that the user has logged out'''
+        if self.current_receiver is None:
+            return
+        transport = self.factory.users.get(self.current_receiver)
+        if transport is None:
+            return
+        server_message = message.ServerMessage('<%s> has logged out.' % (self.nick))
+        transport.write(pickle.dumps(server_message))
         self.transport.loseConnection()
         del self.factory.users[self.nick]
     
@@ -121,4 +154,3 @@ class ChatFactory(protocol.Factory):
 reactor.listenTCP(8001, ChatFactory())
 print 'Server running, listening for incoming connections...'
 reactor.run()
-        

@@ -16,7 +16,7 @@ class ChatThread(Thread):
             if text.startswith('~'):
                 text_message = None
                 try:
-                    '''for ping, mute, unmute'''
+                    '''for commands that have a tag; for eg. man ~ping'''
                     command, user = text[1:].split()
                     text_message = message.CommandMessage(command, user)
                 except ValueError as e:

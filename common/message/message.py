@@ -27,17 +27,16 @@ class ChatMessage(Basic):
         return self._status
     
 class CommandMessage(Basic):
-    def __init__(self, command, user=None):
-        '''user is used only in case of the ping command'''
+    def __init__(self, command, tag=None):
         self._command = command
         self._status = 'COMMAND'
-        self._user = user
+        self._tag = tag
 
     def get_command(self):
         return self._command
     
-    def get_user(self):
-        return self._user
+    def get_tag(self):
+        return self._tag
 
     def get_status(self):
         return self._status
