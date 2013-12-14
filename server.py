@@ -3,12 +3,12 @@ from threading import Thread
 import cPickle as pickle
 from common.message import message
 
-commands = ['exit', 'ping', 'users']
+commands = ['exit', 'ping', 'users', 'whoami', 'other']
 
 class ChatProtocol(protocol.Protocol):
     def __init__(self, factory):
         self.factory = factory
-        self.name = None
+        self.nick = None
         self.peer = None
         self.current_receiver = None
         self.state = 'REGISTER'
@@ -18,7 +18,7 @@ class ChatProtocol(protocol.Protocol):
         print 'Client connected from %s:%s' % (self.peer.host, self.peer.port)
         
     def connectionLost(self, reason):
-        print '<%s> disconnected at %s:%s' % (self.name, self.peer.host, self.peer.port)
+        print '<%s> disconnected at %s:%s' % (self.nick, self.peer.host, self.peer.port)
     
     def dataReceived(self, data):
         if self.state == 'REGISTER':
@@ -26,15 +26,15 @@ class ChatProtocol(protocol.Protocol):
         else:
             self.handle_data(data)
         
-    def handle_register(self, name):
-        if name in self.factory.users:
+    def handle_register(self, nick):
+        if nick in self.factory.users:
             '''Create a ServerMessage object to tell that the nick is already in use'''
             server_message = message.ServerMessage('Nick already in use. Try another nick.')
             self.transport.write(pickle.dumps(server_message))
             return
         else:
-            self.name = name
-            self.factory.users[self.name] = self.transport
+            self.nick = nick
+            self.factory.users[self.nick] = self.transport
             self.state = 'CHAT'
         
     def handle_data(self, chat):
@@ -46,7 +46,8 @@ class ChatProtocol(protocol.Protocol):
             self.handle_command(text_message)
         elif status == 'CHAT':
             if self.current_receiver == None:
-                self.transport.write('* You need to ping a user before you can start chatting *')
+                server_message = message.ServerMessage('You need to ping a user before chatting')
+                self.transport.write(pickle.dumps(server_message))
                 return
             self.handle_chat(text_message)
             
@@ -64,6 +65,10 @@ class ChatProtocol(protocol.Protocol):
             self.ping_user(user)
         elif command == 'exit':
             self.exit_user()
+        elif command == 'whoami':
+            self.whoami_user()
+        elif command == 'other':
+            self.other_user()
             
     def handle_chat(self, text_message):
         transport = self.factory.users.get(self.current_receiver)
@@ -78,15 +83,33 @@ class ChatProtocol(protocol.Protocol):
         self.transport.write(pickle.dumps(server_message))
     
     def ping_user(self, user):
-        '''ping user'''
-        '''set the current receiver for this user to user'''
-        self.current_receiver = user
-        server_message = message.ServerMessage('You can start chatting with %s' % (self.current_receiver))
+        '''first check if the user is there/online'''
+        if user not in self.factory.users.keys():
+            server_message = message.ServerMessage('<%s> is not online right now' % (user))
+        else:
+            server_message = message.ServerMessage('You can start chatting with <%s>' % (user))
+            self.current_receiver = user
+        self.transport.write(pickle.dumps(server_message))
+
+    def whoami_user(self):
+        server_message = message.ServerMessage(self.nick)
+        self.transport.write(pickle.dumps(server_message))
+
+    def other_user(self):
+        if self.current_receiver is None:
+            server_message = message.ServerMessage('You are not chatting with anyone right now.')
+        else:
+            server_message = message.ServerMessage(self.current_receiver)
         self.transport.write(pickle.dumps(server_message))
 
     def exit_user(self):
+        '''Send a message to the current receiver that the user is logging out'''
+        if self.current_receiver is not None:
+            transport = self.factory.users.get(self.current_receiver)
+            server_message = message.ServerMessage('<%s> has logged out.' % (self.nick))
+            transport.write(pickle.dumps(server_message))
         self.transport.loseConnection()
-        del self.factory.users[self.name]
+        del self.factory.users[self.nick]
     
 class ChatFactory(protocol.Factory):
     def __init__(self):
@@ -98,6 +121,4 @@ class ChatFactory(protocol.Factory):
 reactor.listenTCP(8001, ChatFactory())
 print 'Server running, listening for incoming connections...'
 reactor.run()
-    
-    
         

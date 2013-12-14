@@ -17,7 +17,7 @@ class ChatThread(Thread):
             if text.startswith('~'):
                 text_message = None
                 try:
-                    '''for ping'''
+                    '''for ping, mute, unmute'''
                     command, user = text[1:].split()
                     text_message = message.CommandMessage(command, user)
                 except ValueError as e:
