@@ -16,11 +16,11 @@ class ChatThread(Thread):
             if text.startswith('~'):
                 text_message = None
                 try:
-                    '''for commands that have a tag; for eg. man ~ping'''
+                    '''for commands that have a tag; for eg. ~man ping'''
                     command, user = text[1:].split()
                     text_message = message.CommandMessage(command, user)
                 except ValueError as e:
-                    '''the command is not a ping command'''
+                    '''command that do not have a tag; for eg. ~other'''
                     command = text[1:]
                     text_message = message.CommandMessage(command)
             else:
@@ -37,13 +37,12 @@ class ClientProtocol(protocol.Protocol):
         self.chat_thread.start()
     
     def dataReceived(self, data):
-        '''unpickle the ChatMessage object here'''
         chat_message = pickle.loads(data)
         '''get the status of the message and see how to parse it'''
         status = chat_message.get_status()
         if status == 'SERVER_MESSAGE':
             print '* %s *' % (chat_message.get_text())
-        elif status == 'CHAT':
+        elif status == 'CHAT_MESSAGE':
             sender = chat_message.get_sender()
             text = chat_message.get_text()
             output = '<%s>: %s' % (sender, text)

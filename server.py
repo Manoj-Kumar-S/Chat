@@ -46,9 +46,9 @@ class ChatProtocol(protocol.Protocol):
             self.send_server_message(welcome_message)
             self.state = 'CHAT'
         
-    def handle_data(self, chat):
+    def handle_data(self, data):
         '''parse the message object here'''
-        text_message = pickle.loads(chat)
+        text_message = pickle.loads(data)
         '''get the status of the message to see how to handle it'''
         status = text_message.get_status()
         if status == 'COMMAND':
@@ -94,9 +94,9 @@ class ChatProtocol(protocol.Protocol):
         else:
             self.send_server_message(command_info)
 
-    def handle_chat(self, text_message):
+    def handle_chat(self, chat_message):
         receiver_transport = self.factory.users.get(self.current_receiver)
-        receiver_transport.write(pickle.dumps(text_message))
+        receiver_transport.write(pickle.dumps(chat_message))
             
     def send_users_list(self):
         delimited_users_list = ''
