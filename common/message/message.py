@@ -7,24 +7,6 @@ class Basic(object):
     def get_status(self):
         raise NotImplementedError
     
-class UsernameMessage(Basic):
-    def __init__(self, username):
-        self._username = username
-        self._flag = 1
-        
-    def get_username(self):
-        return self._username
-
-    def get_flag(self):
-        return self._flag
-    
-class LogoutMessage(Basic):
-    def __init__(self):
-        self._flag = -1
-    
-    def get_flag(self):
-        return self._flag
-    
 class ChatMessage(Basic):
     def __init__(self, sender, text, receiver=None):
         self._sender = sender

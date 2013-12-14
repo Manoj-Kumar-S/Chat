@@ -67,5 +67,3 @@ class ClientFactory(protocol.ClientFactory):
 
 reactor.connectTCP('localhost', 8001, ClientFactory())
 reactor.run()
-            
-            
