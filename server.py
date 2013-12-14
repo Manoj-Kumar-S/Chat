@@ -43,8 +43,7 @@ class ChatProtocol(protocol.Protocol):
             self.nick = nick
             self.factory.users[self.nick] = self.transport
             welcome_message = 'Welcome %s! Type ~commands to get the list of available commands.' % (self.nick)
-            server_message = message.ServerMessage(welcome_message)
-            self.transport.write(pickle.dumps(server_message))
+            self.send_server_message(welcome_message)
             self.state = 'CHAT'
         
     def handle_data(self, chat):
@@ -56,8 +55,7 @@ class ChatProtocol(protocol.Protocol):
             self.handle_command(text_message)
         elif status == 'CHAT':
             if self.current_receiver == None:
-                server_message = message.ServerMessage('You need to ping a user before chatting')
-                self.transport.write(pickle.dumps(server_message))
+                self.send_server_message('You need to ping a user before chatting')
                 return
             self.handle_chat(text_message)
             
@@ -65,9 +63,7 @@ class ChatProtocol(protocol.Protocol):
         '''command_message is the CommandMessage object'''
         command = command_message.get_command()
         if command not in commands:
-            '''create a ServerMessage object here'''
-            server_message = message.ServerMessage('Invalid command')
-            self.transport.write(pickle.dumps(server_message))
+            self.send_server_message('Invalid command')
         elif command == 'commands':
             self.send_commands_list()
         elif command == 'help' or command == 'man':
@@ -89,60 +85,60 @@ class ChatProtocol(protocol.Protocol):
         result = ''
         for key, value in commands.iteritems():
             result += '%s: %s\n' % (key, value)
-        server_message = message.ServerMessage(result[:len(result)-1])
-        self.transport.write(pickle.dumps(server_message))
+        self.send_server_message(result[:len(result) - 1])
 
     def send_help_for_command(self, command):
         command_info = commands.get(command)
         if command_info is None:
-            server_message = message.ServerMessage('Invalid command name')
+            self.send_server_message('Invalid command name')
         else:
-            server_message = message.ServerMessage(command_info)
-        self.transport.write(pickle.dumps(server_message))
+            self.send_server_message(command_info)
 
     def handle_chat(self, text_message):
-        transport = self.factory.users.get(self.current_receiver)
-        transport.write(pickle.dumps(text_message))
+        receiver_transport = self.factory.users.get(self.current_receiver)
+        receiver_transport.write(pickle.dumps(text_message))
             
     def send_users_list(self):
         delimited_users_list = ''
         for user in self.factory.users.keys():
             delimited_users_list += user + ', '
         result = delimited_users_list[0 : len(delimited_users_list)-2]
-        server_message = message.ServerMessage(result)
-        self.transport.write(pickle.dumps(server_message))
+        self.send_server_message(result)
     
     def ping_user(self, user):
         '''first check if the user is there/online'''
         if user not in self.factory.users.keys():
-            server_message = message.ServerMessage('<%s> is not online right now' % (user))
+            self.send_server_message('<%s> is not online right now' % (user))
         else:
-            server_message = message.ServerMessage('You can start chatting with <%s>' % (user))
+            self.send_server_message('You can start chatting with <%s>' % (user))
             self.current_receiver = user
-        self.transport.write(pickle.dumps(server_message))
 
     def whoami_user(self):
-        server_message = message.ServerMessage(self.nick)
-        self.transport.write(pickle.dumps(server_message))
+        self.send_server_message(self.nick)
 
     def other_user(self):
         if self.current_receiver is None:
-            server_message = message.ServerMessage('You are not chatting with anyone right now.')
+            self.send_server_message('You are not chatting with anyone right now.')
         else:
-            server_message = message.ServerMessage(self.current_receiver)
-        self.transport.write(pickle.dumps(server_message))
+            self.send_server_message(self.current_receiver)
 
     def exit_user(self):
         '''Send a message to the current receiver that the user has logged out'''
-        if self.current_receiver is None:
-            return
-        transport = self.factory.users.get(self.current_receiver)
-        if transport is None:
-            return
-        server_message = message.ServerMessage('<%s> has logged out.' % (self.nick))
-        transport.write(pickle.dumps(server_message))
+        if self.current_receiver is not None:
+            transport = self.factory.users.get(self.current_receiver)
+            if transport is not None:
+                self.send_server_message('<%s> has logged out.' % (self.nick), transport)
+        self.send_server_message('<%s> has logged out.' % (self.nick), transport)
         self.transport.loseConnection()
         del self.factory.users[self.nick]
+    
+    def send_server_message(self, text, transport=None):
+        server_message = message.ServerMessage(text)
+        b = pickle.dumps(server_message)
+        if transport is None:
+            self.transport.write(b)
+            return
+        transport.write(b)
     
 class ChatFactory(protocol.Factory):
     def __init__(self):
