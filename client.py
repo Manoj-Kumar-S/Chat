@@ -12,7 +12,7 @@ class ChatThread(Thread):
         
     def run(self):
         while True:
-            text = raw_input().strip().lower()
+            text = raw_input().strip()
             if text.startswith('~'):
                 text_message = None
                 try:
@@ -30,7 +30,12 @@ class ChatThread(Thread):
 class ClientProtocol(protocol.Protocol):
     def connectionMade(self):
         '''create nick and send it to the server'''
-        self.nick = raw_input('Enter a nick: ').strip().lower()
+        while True:
+            nick = raw_input('Enter a nick: ').strip().lower()
+            if ' ' in nick:
+                print '* Only single-word nicks are allowed. *'
+            else: break
+        self.nick = nick
         self.transport.write(self.nick)
         self.chat_thread = ChatThread(self.nick, self.transport)
         self.chat_thread.setDaemon(True)
@@ -50,8 +55,8 @@ class ClientProtocol(protocol.Protocol):
     
 class ClientFactory(protocol.ClientFactory):
     def __init__(self):
-        self.chat_thread = None
-    
+        pass
+
     def buildProtocol(self, addr):
         return ClientProtocol()
     

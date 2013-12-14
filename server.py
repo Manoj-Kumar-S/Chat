@@ -128,7 +128,6 @@ class ChatProtocol(protocol.Protocol):
             transport = self.factory.users.get(self.current_receiver)
             if transport is not None:
                 self.send_server_message('<%s> has logged out.' % (self.nick), transport)
-        self.send_server_message('<%s> has logged out.' % (self.nick), transport)
         self.transport.loseConnection()
         del self.factory.users[self.nick]
     
