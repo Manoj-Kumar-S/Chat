@@ -1,7 +1,6 @@
 from twisted.internet import protocol, reactor
 from threading import Thread
 from common.message import message
-from common.exception import exception
 import cPickle as pickle
 
 class ChatThread(Thread):
