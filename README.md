@@ -14,7 +14,9 @@ Clone the repository, and then...
 Demo
 ----
 
-After installation, set up the server-
+After installation, change to the Chat/Chat directory.
+
+Set up the server-
 
     $ python server.py
 
