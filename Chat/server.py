@@ -94,7 +94,6 @@ class ChatProtocol(protocol.Protocol):
             self.send_server_message(command_info)
 
     def handle_chat(self, chat_message):
-        if self.current_receiver is None: return
         receiver_transport = self.factory.users.get(self.current_receiver)
         if receiver_transport == None:
             self.send_server_message('<%s> is not online right now.' % (self.current_receiver))
