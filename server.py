@@ -35,9 +35,8 @@ class ChatProtocol(protocol.Protocol):
         
     def handle_register(self, nick):
         if nick in self.factory.users:
-            '''Create a ServerMessage object to tell that the nick is already in use'''
-            server_message = message.ServerMessage('Nick already in use. Try another nick.')
-            self.transport.write(pickle.dumps(server_message))
+            '''tell the user that the nick is already in use'''
+            self.send_server_message('Nick already in use. Try another nick.')
             return
         else:
             self.nick = nick
@@ -95,7 +94,12 @@ class ChatProtocol(protocol.Protocol):
             self.send_server_message(command_info)
 
     def handle_chat(self, chat_message):
+        if self.current_receiver is None: return
         receiver_transport = self.factory.users.get(self.current_receiver)
+        if receiver_transport == None:
+            self.send_server_message('<%s> is not online right now.' % (self.current_receiver))
+            self.current_receiver = None
+            return
         receiver_transport.write(pickle.dumps(chat_message))
             
     def send_users_list(self):
@@ -130,7 +134,7 @@ class ChatProtocol(protocol.Protocol):
                 self.send_server_message('<%s> has logged out.' % (self.nick), transport)
         self.transport.loseConnection()
         del self.factory.users[self.nick]
-    
+
     def send_server_message(self, text, transport=None):
         server_message = message.ServerMessage(text)
         b = pickle.dumps(server_message)
@@ -138,7 +142,7 @@ class ChatProtocol(protocol.Protocol):
             self.transport.write(b)
             return
         transport.write(b)
-    
+
 class ChatFactory(protocol.Factory):
     def __init__(self):
         self.users = {}
