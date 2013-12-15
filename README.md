@@ -11,7 +11,7 @@ Clone the repository, and then...
     $ python setup.py install
 
 
-Demo
+Usage
 ----
 
 After installation, change to the Chat/Chat directory.
